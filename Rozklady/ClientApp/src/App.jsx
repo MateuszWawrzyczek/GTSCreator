@@ -1,7 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate  } from "react-router-dom";
 import AppLayout from "./components/AppLayout";
-import LineStops from "./components/LineStops";
+//import LineStops from "./components/LineStops";
 //import HomePage from "./pages/HomePage";
 //import Lines from "./components/Lines";
 //import Stops from "./components/Stops"; // np. nowy komponent na przystanki
@@ -14,7 +14,8 @@ function App() {
         {/* Domyślnie przekieruj na /linie */}
         <Route index element={<Navigate to="/linie" replace />} />
         <Route path="route/:feedId/:routeId" element={<div></div>} />
-
+        <Route path="stops" element={<div></div>} />
+        <Route path="stop/:feedId/:stopId" element={<div></div>} />
 
         {/* Rozkład linii */}
         <Route path="linie" element={<div>Mapa/treść dla linii</div>} />

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
+
 
 function RouteVariantsDropdown() {
   const { feedId, routeId } = useParams();
@@ -18,8 +19,10 @@ function RouteVariantsDropdown() {
           ...v,
           stops: JSON.parse(v.stops)
         }));
-
         setVariants(parsed);
+        if (parsed.length > 0) {
+          setSelectedVariantIndex(0);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -42,7 +45,7 @@ function RouteVariantsDropdown() {
 
   return (
     <div className="p-3">
-      <h2>Warianty linii {routeId}</h2>
+      <h2 className="mb-3">Warianty linii {routeId}</h2>
 
       <select
         className="form-select mb-3"
@@ -61,16 +64,17 @@ function RouteVariantsDropdown() {
         })}
       </select>
 
-      {selectedVariant && (
-        <div>
-          <h3>Przystanki:</h3>
-          <ol>
-            {selectedVariant.stops.map((stop) => (
-              <li key={stop.stop_id}>{stop.stop_name}</li>
-            ))}
-          </ol>
-        </div>
-      )}
+      <ol className="stop-list">
+        {selectedVariant.stops.map((stop, idx) => (
+          <li key={stop.stop_id}>
+            <div className="stop-content">
+              <Link to={`/stop/${feedId}/${stop.stop_id}`} className="stop-link">
+                {stop.stop_name}
+              </Link>
+            </div>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }

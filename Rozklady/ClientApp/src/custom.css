@@ -1,11 +1,6 @@
-/* Tailwind base styles – muszą być na samej górze */
-@tailwind base;
+@import "leaflet/dist/leaflet.css";
 
-/* Tailwind komponenty – np. przydatne klasy gotowe do użycia */
-@tailwind components;
 
-/* Tailwind utilities – wszystkie klasy narzędziowe */
-@tailwind utilities;
 
 /* Twoje własne style poniżej */
 body {

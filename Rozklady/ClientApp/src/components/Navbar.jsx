@@ -20,15 +20,20 @@ function Navbar() {
       </div>
 
       {/* Pasek menu */}
-      <nav className="bg-success">
-        <ul className="nav">
-          <li className="nav-item">
-            <Link to="/linie" className="nav-link text-white fw-semibold">
-              Rozkład linii
-            </Link>
-          </li>
-        </ul>
-      </nav>
+      <nav className="bg-success p-2">
+  <ul className="nav">
+    <li className="nav-item">
+      <Link to="/linie" className="nav-link text-white fw-semibold">
+        Rozkład linii
+      </Link>
+    </li>
+    <li className="nav-item">
+      <Link to="/stops" className="nav-link text-white fw-semibold">
+        Przystanki
+      </Link>
+    </li>
+  </ul>
+</nav>
 
     </header>
   );
