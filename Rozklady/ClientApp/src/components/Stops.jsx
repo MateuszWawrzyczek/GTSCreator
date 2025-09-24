@@ -70,87 +70,90 @@ function Stops() {
     stop.stopSlug.includes(slugify(search))
   );
 
-return (
-  <div className="row h-100">
-    {/* Lewa kolumna – lista */}
-    <div className="col-12 col-lg-4 p-3 border-end d-flex flex-column">
-      <h2 className="mb-3">Przystanki</h2>
+  return (
+    <div className="row" style={{ height: "calc(100vh - 56px)" }}> 
+      <div
+        className="col-12 col-lg-3 border-end d-flex flex-column"
+        style={{
+          paddingTop: "1rem",
+          paddingBottom: "1rem",
+          paddingLeft: "2.5rem",
+          paddingRight: "1.5rem",
+        }}
+      >
+        <h2 className="mb-3">Przystanki</h2>
 
-      <input
-        type="text"
-        placeholder="Szukaj przystanku..."
-        className="form-control mb-3"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+        <input
+          type="text"
+          placeholder="Szukaj przystanku..."
+          className="form-control mb-3"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
-      <div className="flex-grow-1 overflow-auto d-flex flex-column gap-3 mt-2">
-        {filteredStops.map((stop) => {
-          const key = `${stop.feedId}_${stop.stopId}`;
-          const expanded = expandedStops[key];
+        <div
+          className="flex-grow-1 overflow-auto d-flex flex-column gap-3 mt-2"
+          style={{ maxHeight: "calc(100vh - 56px - 3rem - 2rem)" }}
+        >
+          {filteredStops.map((stop) => {
+            const key = `${stop.feedId}_${stop.stopId}`;
+            const expanded = expandedStops[key];
 
-          return (
-            <div key={key}>
-              <div
-                onClick={() => toggleStop(stop.feedId, stop.stopId)}
-                style={{
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Link 
-                  to={`/stop/${stop.feedId}/${stop.stopId}`} 
-                  className="stop-link"
-                >
-                  {stop.stopName}
-                </Link>
-                <span>{expanded ? "⌄" : "›"}</span>
-              </div>
-
-              {expanded && (
+            return (
+              <div key={key}>
                 <div
-                  className="d-flex flex-wrap mt-1"
-                  style={{ gap: "0.3rem", rowGap: "0.3rem" }}
+                  onClick={() => toggleStop(stop.feedId, stop.stopId)}
+                  style={{
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
                 >
-                  {expanded.map((route) => {
-                    const bgColor = feedColors[route.feedId] || "#ccc";
-                    const textColor =
-                      bgColor.toLowerCase() === "#ffffff" ? "#000" : "#fff";
-
-                    return (
-                      <Link
-                        key={route.routeId}
-                        to={`/route/${route.feedId}/${route.routeId}`}
-                        className="px-2 py-1 rounded-pill text-decoration-none"
-                        style={{
-                          backgroundColor: bgColor,
-                          color: textColor,
-                          border: "1px solid #aaa",
-                          fontSize: "0.75rem",
-                          minWidth: "30px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {route.routeShortName}
-                      </Link>
-                    );
-                  })}
+                  <Link to={`/stop/${stop.feedId}/${stop.stopId}`} className="stop-link">
+                    {stop.stopName}
+                  </Link>
+                  <span>{expanded ? "⌄" : "›"}</span>
                 </div>
-              )}
-            </div>
-          );
-        })}
+
+                {expanded && (
+                  <div className="d-flex flex-wrap mt-1" style={{ gap: "0.3rem", rowGap: "0.3rem" }}>
+                    {expanded.map((route) => {
+                      const bgColor = feedColors[route.feedId] || "#ccc";
+                      const textColor = bgColor.toLowerCase() === "#ffffff" ? "#000" : "#fff";
+
+                      return (
+                        <Link
+                          key={route.routeId}
+                          to={`/route/${route.feedId}/${route.routeId}`}
+                          className="px-2 py-1 rounded-pill text-decoration-none"
+                          style={{
+                            backgroundColor: bgColor,
+                            color: textColor,
+                            border: "1px solid #aaa",
+                            fontSize: "0.75rem",
+                            minWidth: "30px",
+                            textAlign: "center",
+                          }}
+                        >
+                          {route.routeShortName}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="col-12 col-lg-9 p-0 d-flex flex-column">
+        <StopsMap stops={filteredStops} style={{ flexGrow: 1, height: "100%" }} />
       </div>
     </div>
+  );
 
-    {/* Prawa kolumna – mapa */}
-    <div className="col-12 col-lg-8 p-0">
-      <StopsMap stops={filteredStops} />
-    </div>
-  </div>
-);
 };
 
 export default Stops;

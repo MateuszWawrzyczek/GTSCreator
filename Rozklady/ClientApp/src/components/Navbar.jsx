@@ -32,6 +32,11 @@ function Navbar() {
         Przystanki
       </Link>
     </li>
+    <li className="nav-item">
+      <Link to="/vehicles" className="nav-link text-white fw-semibold">
+        Pojazdy na żywo
+      </Link>
+    </li>
   </ul>
 </nav>
 

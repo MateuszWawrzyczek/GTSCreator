@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import feedColors from "../styles/feedColors.js"
+import StopsMap from "./StopsMap.jsx";
 
 function Lines() {
   const [linie, setLinie] = useState([]);
@@ -31,7 +32,16 @@ function Lines() {
   if (!linie.length) return <p>Brak danych do wyświetlenia</p>;
 
   return (
-    <div className="p-3">
+  <div className="row" style={{ height: "calc(100vh - 56px)" }}>
+    <div
+      className="col-12 col-lg-3 border-end d-flex flex-column"
+      style={{
+          paddingTop: "1rem",
+          paddingBottom: "1rem",
+          paddingLeft: "2rem",
+          paddingRight: "2rem",
+        }}
+    >
       <h1 className="mb-3">Linie</h1>
       <div
         className="d-flex flex-wrap mt-2"
@@ -39,7 +49,8 @@ function Lines() {
       >
         {linie.map((linia) => {
           const bgColor = feedColors[linia.feedId] || "#ccc";
-          const textColor = bgColor.toLowerCase() === "#ffffff" ? "#000" : "#fff";
+          const textColor =
+            bgColor.toLowerCase() === "#ffffff" ? "#000" : "#fff";
 
           return (
             <Link
@@ -62,7 +73,12 @@ function Lines() {
         })}
       </div>
     </div>
-  );
+
+    <div className="col-12 col-lg-9 p-0 d-flex flex-column">
+      <StopsMap stops={[]} />
+    </div>
+  </div>
+);
 }
 
 export default Lines;

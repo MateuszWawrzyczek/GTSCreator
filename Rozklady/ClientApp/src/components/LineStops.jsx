@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import StopsMap from "./StopsMap.jsx";
+import "../styles/StopsList.css"; // opcjonalnie, jeśli masz własne style
+import { map } from "leaflet";
 
-
-function RouteVariantsDropdown() {
+function RouteVariantStops() {
   const { feedId, routeId } = useParams();
   const [variants, setVariants] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,10 +21,9 @@ function RouteVariantsDropdown() {
           ...v,
           stops: JSON.parse(v.stops)
         }));
+
         setVariants(parsed);
-        if (parsed.length > 0) {
-          setSelectedVariantIndex(0);
-        }
+        if (parsed.length > 0) setSelectedVariantIndex(0);
       } catch (err) {
         console.error(err);
       } finally {
@@ -42,41 +43,75 @@ function RouteVariantsDropdown() {
   };
 
   const selectedVariant = selectedVariantIndex !== null ? variants[selectedVariantIndex] : null;
+  console.log(selectedVariant);
+    const mappedStops = selectedVariant?.stops
+    .filter(s => s.lat != null && s.lon != null)
+    .map(s => ({
+      feedId: feedId,
+      stopId: s.stop_id,
+      stopName: s.stop_name,
+      stopLat: s.lat,
+      stopLon: s.lon,
+    }));
 
   return (
-    <div className="p-3">
-      <h2 className="mb-3">Warianty linii {routeId}</h2>
-
-      <select
-        className="form-select mb-3"
-        onChange={handleChange}
-        value={selectedVariantIndex !== null ? selectedVariantIndex : ""}
+    <div className="row" style={{ height: "calc(100vh - 56px)" }}>
+      <div
+        className="col-12 col-lg-3 border-end d-flex flex-column"
+        style={{
+          paddingTop: "1rem",
+          paddingBottom: "1rem",
+          paddingLeft: "2.5rem",
+          paddingRight: "1.5rem",
+        }}
       >
-        <option value="">-- Wybierz wariant --</option>
-        {variants.map((v, i) => {
-          const firstStop = v.stops[0]?.stop_name || "-";
-          const lastStop = v.stops[v.stops.length - 1]?.stop_name || "-";
-          return (
-            <option key={i} value={i}>
-              {firstStop} → {lastStop}
-            </option>
-          );
-        })}
-      </select>
+        <h2 className="mb-3">Warianty linii {routeId}</h2>
 
-      <ol className="stop-list">
-        {selectedVariant.stops.map((stop, idx) => (
-          <li key={stop.stop_id}>
-            <div className="stop-content">
-              <Link to={`/stop/${feedId}/${stop.stop_id}`} className="stop-link">
-                {stop.stop_name}
-              </Link>
-            </div>
-          </li>
-        ))}
-      </ol>
+        <select
+          className="form-select mb-3"
+          onChange={handleChange}
+          value={selectedVariantIndex !== null ? selectedVariantIndex : ""}
+        >
+          <option value="">-- Wybierz wariant --</option>
+          {variants.map((v, i) => {
+            const firstStop = v.stops[0]?.stop_name || "-";
+            const lastStop = v.stops[v.stops.length - 1]?.stop_name || "-";
+            return (
+              <option key={i} value={i}>
+                {firstStop} → {lastStop}
+              </option>
+            );
+          })}
+        </select>
+
+        <div
+          className="flex-grow-1 overflow-auto d-flex flex-column gap-3 mt-2"
+          style={{ maxHeight: "calc(100vh - 56px - 3rem - 2rem)" }}
+        >
+          <ol className="stop-list">
+            {selectedVariant?.stops.map((stop, idx) => (
+              <li key={stop.stop_id}>
+                <div className="stop-content">
+                  <Link
+                    to={`/stop/${feedId}/${stop.stop_id}`}
+                    className="stop-link"
+                  >
+                    {idx + 1}. {stop.stop_name}
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+
+      <div className="col-12 col-lg-9 p-0 d-flex flex-column">
+        <div className="flex-grow-1">
+          <StopsMap stops={mappedStops} />
+        </div>
+      </div>
     </div>
   );
 }
 
-export default RouteVariantsDropdown;
+export default RouteVariantStops;

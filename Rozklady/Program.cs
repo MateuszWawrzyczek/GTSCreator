@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Dodaj usługę CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactDev",
@@ -17,9 +16,10 @@ builder.Services.AddCors(options =>
         });
 });
 
-builder.Services.AddDbContext<RozkladyContext>(options =>
+builder.Services.AddDbContextFactory<RozkladyContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddHttpClient();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

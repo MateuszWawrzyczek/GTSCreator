@@ -16,7 +16,7 @@ function App() {
         <Route path="route/:feedId/:routeId" element={<div></div>} />
         <Route path="stops" element={<div></div>} />
         <Route path="stop/:feedId/:stopId" element={<div></div>} />
-
+        <Route path="trip/:feedId/:routeId" element={<div></div>} />
         {/* Rozkład linii */}
         <Route path="linie" element={<div>Mapa/treść dla linii</div>} />
 

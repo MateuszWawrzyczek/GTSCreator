@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 import feedColors from "../styles/feedColors.js";
 
@@ -41,11 +41,14 @@ function StopDepartures() {
         if (!res.ok) {
           throw new Error(`API error ${res.status}`);
         }
+        
     const data = await res.json();
     console.log("Fetched timetable:", url);
     setLines(Array.isArray(data.lines) ? data.lines : []);
     setSelectedLineIndex(0);
   };
+
+  const navigate = useNavigate();
 
   const toggle = async () => {
     if (!expanded) {
@@ -140,8 +143,8 @@ function StopDepartures() {
                     <button
                       key={`${dep.feedId}_${dep.tripId}_${dep.time}`}
                       className="btn btn-sm rounded-pill time-pill"
-                      //onClick={() => handleTimeClick(dep)}
                       title={`${dep.tripId} — ${dep.feedId}`}
+                      onClick={() => navigate(`/trip/${dep.feedId}/${dep.tripId}?selectedStop=${stopId}`)}
                     >
                       {(dep.time || "").substring(0,5)}
                     </button>
