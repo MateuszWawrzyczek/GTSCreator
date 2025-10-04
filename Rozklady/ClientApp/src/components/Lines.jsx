@@ -6,6 +6,7 @@ import StopsMap from "./StopsMap.jsx";
 function Lines() {
   const [linie, setLinie] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [vehicles, setVehicles] = useState([]);
 
   useEffect(() => {
     const fetchLinie = async () => {
@@ -14,7 +15,7 @@ function Lines() {
         console.log("Fetching data from:", url);
         const response = await fetch(url, { mode: "cors" });
 
-        console.log("Fetching data from:", url);
+        //console.log("Fetching data from:", url);
         if (!response.ok) throw new Error("Błąd podczas pobierania danych");
         const data = await response.json();
         setLinie(data);
@@ -24,8 +25,16 @@ function Lines() {
         setLoading(false);
       }
     };
+    const fetchVehicles = async () => {
+      const res = await fetch("https://localhost:7002/api/vehicles/vehiclePositions");
+      const data = await res.json();
+      setVehicles(data);
+    };
 
     fetchLinie();
+    fetchVehicles();
+    const interval = setInterval(fetchVehicles, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) return <p>Ładowanie linii...</p>;
@@ -75,7 +84,7 @@ function Lines() {
     </div>
 
     <div className="col-12 col-lg-9 p-0 d-flex flex-column">
-      <StopsMap stops={[]} />
+      <StopsMap stops={[]} vehicles={vehicles}/>
     </div>
   </div>
 );

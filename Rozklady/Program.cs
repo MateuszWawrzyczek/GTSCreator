@@ -16,16 +16,32 @@ builder.Services.AddCors(options =>
         });
 });
 
+
+
 builder.Services.AddDbContextFactory<RozkladyContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddHttpClient();
+builder.Services.AddHttpClient<KiedyPrzyjedzieClient>(client =>
+{
+    client.BaseAddress = new Uri("https://kiedyprzyjedzie.pl");
+});
+builder.Services.AddHttpClient<IKiedyPrzyjedzieClient, KiedyPrzyjedzieClient>(client =>
+{
+    client.BaseAddress = new Uri("https://kiedyprzyjedzie.pl");
+});
+//builder.Services.AddHttpClient();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
 });
+
+builder.Services.AddScoped<ScraperService>();
+builder.Services.AddScoped<GtfsGenerator>();
+builder.Services.AddScoped<GtfsFacade>();
+
+builder.Services.AddHostedService<GtfsDailyService>();
 
 var app = builder.Build();
 

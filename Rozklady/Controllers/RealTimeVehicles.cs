@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Rozklady.Data;
-using Rozklady.Models;
+//using Rozklady.Models;
 using System.Xml.Linq;
 using System.Text.Json;
 using System.Globalization;
@@ -73,12 +73,13 @@ public async Task<IActionResult> GetVehiclePositionsJson()
 
                         var vehicleInfo = await db2.Vehicles
                             .Where(v => v.FleetNumber == fleet)
+                            .DefaultIfEmpty()
                             .Select(v => new VehicleDto
                             {
                                 FleetNumber = v.FleetNumber,
                                 RouteId = routeId,
-                                Model = v.Model,
-                                AirConditioning = v.AirConditioning,
+                                Model = v != null ? v.Model : null,
+                                AirConditioning = v != null ? v.AirConditioning : false,
                                 Longitude = lon,
                                 Latitude = lat,
                                 DirectionName = direction,

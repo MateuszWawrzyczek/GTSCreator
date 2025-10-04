@@ -15,7 +15,7 @@ function VehiclesList() {
           ...v,
           directionName: v.directionName?.replace(/&#211;/g, "Ó")
         }));
-
+        console.log("Pobrano pojazdy:", normalized);
         setVehicles(normalized);
         setLoading(false);
       } catch (err) {

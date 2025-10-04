@@ -14,6 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="Google.Protobuf" Version="3.32.1" />
     <PackageReference Include="protobuf-net" Version="2.4.0" />

@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import StopsMap from "./StopsMap.jsx";
-import "../styles/StopsList.css"; // opcjonalnie, jeśli masz własne style
-import { map } from "leaflet";
+import "../styles/StopsList.css"; 
 
 function RouteVariantStops() {
   const { feedId, routeId } = useParams();
   const [variants, setVariants] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
+  
   const [loading, setLoading] = useState(true);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(null);
 
@@ -31,8 +32,19 @@ function RouteVariantStops() {
       }
     };
 
+    const fetchVehicles = async () => {
+      const res = await fetch("https://localhost:7002/api/vehicles/vehiclePositions");
+      const data = await res.json();
+      setVehicles(data);
+    };
+
     fetchVariants();
+    fetchVehicles();
   }, [feedId, routeId]);
+
+  const filteredVehicles = React.useMemo(() => {
+    return vehicles.filter(v => v.routeId === routeId);
+  }, [vehicles, routeId]);
 
   if (loading) return <p>Ładowanie wariantów...</p>;
   if (!variants.length) return <p>Brak wariantów dla tej linii</p>;
@@ -107,7 +119,7 @@ function RouteVariantStops() {
 
       <div className="col-12 col-lg-9 p-0 d-flex flex-column">
         <div className="flex-grow-1">
-          <StopsMap stops={mappedStops} />
+          <StopsMap stops={mappedStops} vehicles={filteredVehicles}/>
         </div>
       </div>
     </div>
