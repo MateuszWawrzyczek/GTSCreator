@@ -20,7 +20,7 @@ public class Trip
     public string? TripHeadsign { get; set; }
 
     [Column("direction_id")]
-    public int DirectionId { get; set; }
+    public int? DirectionId { get; set; }
 
     public TransitRoute? Route { get; set; }
     public ICollection<StopTime> StopTimes { get; set; } = new List<StopTime>();

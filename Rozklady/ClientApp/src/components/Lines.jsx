@@ -63,7 +63,7 @@ function Lines() {
 
           return (
             <Link
-              key={linia.routeId}
+              key={`${linia.feedId}-${linia.routeId}`}
               to={`/route/${linia.feedId}/${linia.routeId}`}
               className="px-3 py-1 rounded-pill fw-bold text-decoration-none"
               style={{

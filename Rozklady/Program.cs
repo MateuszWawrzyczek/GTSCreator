@@ -40,8 +40,9 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddScoped<ScraperService>();
 builder.Services.AddScoped<GtfsGenerator>();
 builder.Services.AddScoped<GtfsFacade>();
+builder.Services.AddScoped<GtfsUploader>();
+builder.Services.AddHostedService<GtfsBackgroundService>();
 
-builder.Services.AddHostedService<GtfsDailyService>();
 
 var app = builder.Build();
 

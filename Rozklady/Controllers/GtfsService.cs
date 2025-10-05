@@ -1,84 +1,67 @@
 using Microsoft.Extensions.Hosting;
-using System.Collections.Concurrent;
-using System.Globalization;
-using System.IO.Compression;
-using CsvHelper;
+using System.Threading;
+using System.Threading.Tasks;
 
-public class GtfsDailyService : BackgroundService
+public class GtfsBackgroundService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<GtfsBackgroundService> _logger;
 
-    private readonly List<Customer> _cities = new List<Customer>
-    {
-        new Customer { Prefix = "wodzislaw", Name = "Wodzisław", Domain = "kiedyprzyjedzie.pl/" },
-        new Customer { Prefix = "raciborz", Name = "Racibórz", Domain = "kiedyprzyjedzie.pl/" }
-    };
-
-    public GtfsDailyService(IServiceProvider serviceProvider)
+    public GtfsBackgroundService(
+        IServiceProvider serviceProvider,
+        ILogger<GtfsBackgroundService> logger)
     {
         _serviceProvider = serviceProvider;
+        _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        while (!stoppingToken.IsCancellationRequested)
+        var cities = new List<Customer>
         {
-            var now = DateTime.Now;
-            var nextRun = DateTime.Today.AddDays(now.Hour >= 2 ? 1 : 0).AddHours(2);
-            var delay = nextRun - now;
-            if (delay.TotalMilliseconds > 0)
-                await Task.Delay(delay, stoppingToken);
+            new() { Prefix = "wodzislaw", Name = "Wodzisław", Domain = "kiedyprzyjedzie.pl" },
+            new() { Prefix = "pksraciborz", Name = "PKS Racibórz", Domain = "kiedyprzyjedzie.pl" },
+            //new() { Prefix = "pszczyna", Name = "Pszczyna", Domain = "kiedyprzyjedzie.pl" },
+            new() { Prefix = "powiatwodzislawski", Name = "Powiat Wodzisławski", Domain = "kiedyprzyjedzie.pl" },
+            new() { Prefix = "raciborz", Name = "Racibórz", Domain = "kiedyprzyjedzie.pl" }
+        };
 
-            Console.WriteLine($"[{DateTime.Now}] Start generowania GTFS dla wszystkich miast");
+        _logger.LogInformation("⏰ Start generowania GTFS po starcie aplikacji");
 
-            using (var scope = _serviceProvider.CreateScope())
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            var scraperService = scope.ServiceProvider.GetRequiredService<ScraperService>();
+            var generator = scope.ServiceProvider.GetRequiredService<GtfsGenerator>();
+            var uploader = scope.ServiceProvider.GetRequiredService<GtfsUploader>();
+
+            await Parallel.ForEachAsync(cities, new ParallelOptions { MaxDegreeOfParallelism = 3 }, async (city, ct) =>
             {
-                var scraperService = scope.ServiceProvider.GetRequiredService<ScraperService>();
-                var generator = scope.ServiceProvider.GetRequiredService<GtfsGenerator>();
-
-                await Parallel.ForEachAsync(_cities, new ParallelOptions
+                try
                 {
-                    MaxDegreeOfParallelism = 3,
-                    CancellationToken = stoppingToken
-                }, async (city, ct) =>
+                    var data = await scraperService.RunScrapingPipelineAsync(city);
+                    if (data != null)
+                    {
+                        var gtfsBytes = await generator.GenerateGtfsAsync(data);
+                        _logger.LogInformation("✅ Wygenerowano GTFS dla {city}", city.Name);
+
+                        var outputDir = Path.Combine(AppContext.BaseDirectory, "GeneratedGtfs");
+                        Directory.CreateDirectory(outputDir);
+
+                        var filePath = Path.Combine(outputDir, $"{city.Prefix}_gtfs_{DateTime.Now:yyyyMMdd_HHmm}.zip");
+                        await File.WriteAllBytesAsync(filePath, gtfsBytes);
+                        _logger.LogInformation("💾 Zapisano GTFS do pliku: {path}", filePath);
+
+                        await uploader.UploadGtfsToDbAsync(city.Prefix, gtfsBytes);
+                        _logger.LogInformation("📤 Załadowano GTFS do bazy dla {city}", city.Name);
+                    }
+                }
+                catch (Exception ex)
                 {
-                    await GenerateAndSaveGtfsForCity(scraperService, generator, city, ct);
-                });
-            }
-
-            Console.WriteLine($"[{DateTime.Now}] Zakończono generowanie GTFS dla wszystkich miast");
+                    _logger.LogError(ex, "❌ Błąd podczas przetwarzania {city}", city.Name);
+                }
+            });
         }
-    }
 
-    private async Task GenerateAndSaveGtfsForCity(
-        ScraperService scraperService,
-        GtfsGenerator generator,
-        Customer city,
-        CancellationToken ct)
-    {
-        try
-        {
-            var data = await scraperService.RunScrapingPipelineAsync(city);
-            if (data == null)
-            {
-                Console.WriteLine($"Brak danych dla {city.Name}");
-                return;
-            }
-
-            var gtfsBytes = await generator.GenerateGtfsAsync(data);
-
-            // Ustal folder docelowy
-            var folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "GeneratedGtfs");
-            Directory.CreateDirectory(folder); // utwórz jeśli nie istnieje
-
-            var fileName = Path.Combine(folder, $"{city.Prefix}_gtfs.zip");
-
-            await File.WriteAllBytesAsync(fileName, gtfsBytes, ct);
-            Console.WriteLine($"GTFS wygenerowane dla {city.Name} w {fileName}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Błąd przy generowaniu GTFS dla {city.Name}: {ex.Message}");
-        }
+        _logger.LogInformation("✅ Zakończono generowanie i upload GTFS.");
     }
 }
