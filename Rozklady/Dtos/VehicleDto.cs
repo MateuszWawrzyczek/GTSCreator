@@ -2,6 +2,8 @@ public class VehicleDto
 {
     public string? FleetNumber { get; set; }
     public string? RouteId { get; set; }
+    public string? TripId { get; set; }
+    public string? FeedId { get; set; }
     public double Latitude { get; set; }
     public double Longitude { get; set; }
     public DateTime Timestamp { get; set; }

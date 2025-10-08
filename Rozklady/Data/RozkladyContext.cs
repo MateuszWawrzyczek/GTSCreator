@@ -15,6 +15,7 @@ public class RozkladyContext : DbContext
     public DbSet<CalendarDates> CalendarDates { get; set; } = null!;
     public DbSet<ServiceType> ServiceTypes { get; set; } = null!;
     public DbSet<Vehicle> Vehicles { get; set; } = null!;
+    public DbSet<DayType> DayTypes { get; set; } = null!;
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Stop>().HasKey(s => new { s.FeedId, s.StopId });
@@ -25,6 +26,7 @@ public class RozkladyContext : DbContext
         modelBuilder.Entity<CalendarDates>().HasKey(cd => new { cd.FeedId, cd.ServiceId, cd.Date });
         modelBuilder.Entity<ServiceType>().HasKey(sr => new { sr.ServiceId });
         modelBuilder.Entity<Vehicle>().HasKey(v => new { v.FleetNumber });
+        modelBuilder.Entity<DayType>().HasKey(d => new { d.Date });
 
         modelBuilder.Entity<Trip>()
             .HasOne(t => t.Route)

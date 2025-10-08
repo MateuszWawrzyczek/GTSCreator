@@ -24,7 +24,7 @@ public class ScraperService
         // 2. TripCalendar
         var tripCalendar = new ConcurrentDictionary<string, ConcurrentBag<string>>();
 
-        var dates = TimeUtils.GetNextNDays(7);
+        var dates = TimeUtils.GetNextNDays(8);
 
         var stopTasks = allStops.SelectMany(stop => dates.Select(date => new { stop, date }));
         var throttler = new SemaphoreSlim(Concurrency);

@@ -69,6 +69,7 @@ public async Task<IActionResult> GetVehiclePositionsJson()
                         double.TryParse(ParseString(row[10]), System.Globalization.NumberStyles.Any, CultureInfo.InvariantCulture, out var lat);
                         var direction = ParseString(row[25]) == "" ? ParseString(row[26]) : ParseString(row[25]);
                         var delay = ParseString(row[14]);
+                        var tripId = ParseString(row[5])== "0" ? ParseString(row[17]) : ParseString(row[5]);
                         await using var db2 = _contextFactory.CreateDbContext();
 
                         var vehicleInfo = await db2.Vehicles
@@ -78,6 +79,8 @@ public async Task<IActionResult> GetVehiclePositionsJson()
                             {
                                 FleetNumber = v.FleetNumber,
                                 RouteId = routeId,
+                                TripId = tripId,
+                                FeedId = "MZK",
                                 Model = v != null ? v.Model : null,
                                 AirConditioning = v != null ? v.AirConditioning : false,
                                 Longitude = lon,

@@ -8,7 +8,12 @@ from loaders.stop_times_loader import load_stop_times
 from loaders.feed_info_loader import load_feed_info
 
 from db import get_connection
+from tqdm import tqdm  # ✅ pasek postępu
 import os
+import zipfile
+import io
+import csv
+
 
 def delete_feed(feed_id: str):
     conn = get_connection()
@@ -25,46 +30,64 @@ def delete_feed(feed_id: str):
         "feed_info"
     ]
 
-    for table in tables:
+    print(f"🧹 Usuwam stare dane dla feed_id={feed_id}...")
+    for table in tqdm(tables, desc="Usuwanie danych", ncols=80, colour="red"):
         cur.execute(f"DELETE FROM {table} WHERE feed_id = %s;", (feed_id,))
 
     conn.commit()
     cur.close()
     conn.close()
-    print(f"Usunięto stare dane dla feed_id={feed_id}")
+    print(f"✅ Usunięto stare dane dla feed_id={feed_id}")
 
+
+def process_csv_with_progress(feed_id, file, loader_func, desc):
+    """Czyta plik CSV i pokazuje pasek postępu."""
+    text = io.TextIOWrapper(file, encoding="utf-8-sig")
+    reader = list(csv.reader(text))
+    total = len(reader) - 1  # pomijamy nagłówek
+
+    # resetujemy wskaźnik pliku, by loader mógł odczytać całość
+    file.seek(0)
+
+    with tqdm(total=total, desc=desc, unit="wiersze", ncols=80, colour="green") as pbar:
+        # możemy „opakować” loadera w callback aktualizujący pasek postępu
+        def progress_callback():
+            pbar.update(1)
+
+        # loader otrzyma feed_id, plik i funkcję aktualizacji
+        loader_func(feed_id, file, progress_callback)
 
 
 def load_all(feed_id, zip_path):
-    import zipfile
+    loaders = {
+        "feed_info.txt": load_feed_info,
+        "agency.txt": load_agency,
+        "stops.txt": load_stops,
+        "routes.txt": load_routes,
+        "calendar.txt": load_calendar,
+        "calendar_dates.txt": load_calendar_dates,
+        "trips.txt": load_trips,
+        "stop_times.txt": load_stop_times
+    }
 
     with zipfile.ZipFile(zip_path, "r") as z:
-        if "feed_info.txt" in z.namelist():
-            with z.open("feed_info.txt") as f:
-                load_feed_info(feed_id, f)
+        print("📦 Wczytywanie danych z pliku GTFS...")
 
-        with z.open("agency.txt") as f:
-            load_agency(feed_id, f)
+        for filename, loader_func in loaders.items():
+            if filename not in z.namelist():
+                continue
 
-        with z.open("stops.txt") as f:
-            load_stops(feed_id, f)
+            with z.open(filename) as f:
+                # jeśli loader obsługuje callback – pokaż pasek postępu
+                try:
+                    process_csv_with_progress(feed_id, f, loader_func, filename)
+                except TypeError:
+                    # fallback dla loaderów bez callbacka
+                    f.seek(0)
+                    loader_func(feed_id, f)
 
-        with z.open("routes.txt") as f:
-            load_routes(feed_id, f)
+    print("✅ Wczytano dane z pliku GTFS.")
 
-        with z.open("calendar.txt") as f:
-            load_calendar(feed_id, f)
-
-        if "calendar_dates.txt" in z.namelist():
-            with z.open("calendar_dates.txt") as f:
-                load_calendar_dates(feed_id, f)
-
-        with z.open("trips.txt") as f:
-            load_trips(feed_id, f)
-
-        with z.open("stop_times.txt") as f:
-            load_stop_times(feed_id, f)
-    print("Wczytano dane z pliku GTFS.")
 
 def main():
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -74,7 +97,7 @@ def main():
     gtfs_files = [f for f in os.listdir(folder) if f.endswith(".zip")]
 
     if not gtfs_files:
-        print("Brak plików GTFS w folderze:", folder)
+        print("❌ Brak plików GTFS w folderze:", folder)
         return
 
     print("Dostępne pliki GTFS:")
@@ -85,18 +108,19 @@ def main():
     try:
         idx = int(choice) - 1
         if idx < 0 or idx >= len(gtfs_files):
-            print("Niepoprawny numer.")
+            print("❌ Niepoprawny numer.")
             return
     except ValueError:
-        print("Musisz podać liczbę.")
+        print("❌ Musisz podać liczbę.")
         return
 
     zip_path = os.path.join(folder, gtfs_files[idx])
-    print(f"Wybrano: {zip_path}")
+    print(f"📁 Wybrano: {zip_path}")
     feed_id = input("Podaj feed id: ")
+
     delete_feed(feed_id)
     load_all(feed_id, zip_path)
-    
+
 
 if __name__ == "__main__":
     main()

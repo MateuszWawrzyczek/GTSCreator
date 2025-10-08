@@ -94,6 +94,8 @@ public class TimetableController : ControllerBase
         var now = DateTime.Now.TimeOfDay;
         var maxTime = now.Add(TimeSpan.FromHours(hours));
 
+        
+
         var departures = trips
             .SelectMany(t => t.StopTimes, (trip, st) => new { trip, st })
             .Where(x => x.st.StopId == stopId) 

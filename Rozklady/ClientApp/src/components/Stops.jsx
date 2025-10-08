@@ -44,22 +44,22 @@ function Stops() {
 
   const toggleStop = async (feedId, stopId) => {
     const key = `${feedId}_${stopId}`;
-    if (expandedStops[key]) {
+    if (expandedStops[key] !== undefined) {
       setExpandedStops((prev) => {
         const copy = { ...prev };
         delete copy[key];
         return copy;
       });
-    } else {
-      try {
-        const url = `https://localhost:7002/api/stops/${feedId}/${stopId}/routes`;
-        const response = await fetch(url, { mode: "cors" });
-        if (!response.ok) throw new Error("Błąd pobierania linii dla przystanku");
-        const data = await response.json();
-        setExpandedStops((prev) => ({ ...prev, [key]: data }));
-      } catch (err) {
-        console.error(err);
-      }
+      return;
+    }
+    try {
+      const url = `https://localhost:7002/api/stops/${feedId}/${stopId}/routes`;
+      const response = await fetch(url, { mode: "cors" });
+      if (!response.ok) throw new Error("Błąd pobierania linii dla przystanku");
+      const data = await response.json();
+      setExpandedStops((prev) => ({ ...prev, [key]: data }));
+    } catch (err) {
+      console.error(err);
     }
   };
 
