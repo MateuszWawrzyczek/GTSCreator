@@ -21,7 +21,9 @@ public class Trip
 
     [Column("direction_id")]
     public int? DirectionId { get; set; }
-
+    
+    [Column("block_id")]
+    public string? BlockId { get; set; }
     public TransitRoute? Route { get; set; }
     public ICollection<StopTime> StopTimes { get; set; } = new List<StopTime>();
 }

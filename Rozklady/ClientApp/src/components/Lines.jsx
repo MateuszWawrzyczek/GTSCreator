@@ -7,11 +7,12 @@ function Lines() {
   const [linie, setLinie] = useState([]);
   const [loading, setLoading] = useState(true);
   const [vehicles, setVehicles] = useState([]);
+  const apiUrl = process.env.REACT_APP_API_URL;
 
   useEffect(() => {
     const fetchLinie = async () => {
       try {
-        const url = "https://localhost:7002/api/routes";
+        const url = `${apiUrl}/api/routes`;
         console.log("Fetching data from:", url);
         const response = await fetch(url, { mode: "cors" });
 
@@ -26,7 +27,8 @@ function Lines() {
       }
     };
     const fetchVehicles = async () => {
-      const res = await fetch("https://localhost:7002/api/vehicles/vehiclePositions");
+      const res = await fetch(`${apiUrl}/api/vehicles/vehiclePositions`);
+
       const data = await res.json();
       setVehicles(data);
     };
@@ -35,7 +37,7 @@ function Lines() {
     fetchVehicles();
     const interval = setInterval(fetchVehicles, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [apiUrl]);
 
   if (loading) return <p>Ładowanie linii...</p>;
   if (!linie.length) return <p>Brak danych do wyświetlenia</p>;

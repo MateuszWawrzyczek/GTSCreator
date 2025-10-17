@@ -12,5 +12,7 @@ public class VehicleDto
     public int? ProductionYear { get; set; }
     public string? DirectionName { get; set; }
     public string? Delay { get; set; }
+    public bool OnTrip { get; set; }
+    public string? BlockId { get; set; }
     
 }

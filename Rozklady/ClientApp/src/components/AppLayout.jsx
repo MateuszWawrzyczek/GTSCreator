@@ -8,6 +8,7 @@ import StopDepartures from "./StopDepartures";
 import "bootstrap/dist/css/bootstrap.min.css";
 import TripStops from "./TripStops";
 import VehiclesList from "./VehiclesList";
+import BrigadesList from "./Brigades";
 
 const AppLayout = () => {
   const location = useLocation();
@@ -23,7 +24,7 @@ const AppLayout = () => {
       return <LineStops />; 
     }
 
-    if (location.pathname.startsWith("/stops")) {
+    if (location.pathname.startsWith("/przystanki")) {
       return <Stops />; 
     }
     if (location.pathname.startsWith("/stop/")) {
@@ -32,12 +33,13 @@ const AppLayout = () => {
     if (location.pathname.startsWith("/trip/")) {
       return <TripStops />; 
     }
-    if (location.pathname.startsWith("/vehicles")) {
+    if (location.pathname.startsWith("/lista-pojazdow")) {
       return <VehiclesList />;
     }
-
-    
-    return <div>Wybierz opcję z menu</div>;
+    if (location.pathname === "/brygady") {
+      return <BrigadesList />;
+    }
+    return <Stops />;
   };
 
     return (

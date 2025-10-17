@@ -5,14 +5,26 @@ using System.Collections.Concurrent;
 
 public class GtfsGenerator
 {
+    string FormatStopName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return name;
+
+        if (name == name.ToUpper())
+        {
+            var textInfo = new CultureInfo("pl-PL", false).TextInfo;
+            return textInfo.ToTitleCase(name.ToLower());
+        }
+
+        return name;
+    }
+
     public async Task<byte[]> GenerateGtfsAsync(ScrapedData data)
     {
         using var memStream = new MemoryStream();
 
-        // Tworzymy ZIP w trybie Create i zamykamy go po zapisaniu wszystkich plików
         using (var archive = new ZipArchive(memStream, ZipArchiveMode.Create, leaveOpen: true))
         {
-            // --- agency.txt ---
             await WriteCsvAsync(archive, "agency.txt", new[]
             {
                 new {
@@ -24,7 +36,6 @@ public class GtfsGenerator
                 }
             });
 
-            // --- Przygotowanie struktur ---
             var routes = new List<object>();
             var trips = new List<object>();
             var stopTimes = new List<object>();
@@ -60,18 +71,13 @@ public class GtfsGenerator
                 {
                     foreach (var d in dates)
                     {
-                        // dodaj tylko jeśli (TripId, date) nie istnieje
                         if (calendarDatesSet.TryAdd((trip.TripId.ToString(), d), 0))
                         {
-                            // nie dodajemy tu do listy – zrobimy to zbiorczo później
                         }
                     }
                 }
 
-                // dopiero na końcu konwertujesz na listę do CSV
-
-
-                int lastDepartureSeconds = -1;
+                //int lastDepartureSeconds = -1;
                 for (int i = 0; i < trip.Times.Count; i++)
                 {
                     var st = trip.Times[i];
@@ -103,7 +109,7 @@ public class GtfsGenerator
                 {
                     stop_id = s.Id,
                     stop_code = s.Code,
-                    stop_name = s.Name,
+                    stop_name = FormatStopName(s.Name),
                     stop_lon = s.Lon,
                     stop_lat = s.Lat
                 });
@@ -120,7 +126,6 @@ public class GtfsGenerator
 
         }
 
-        // Ustawiamy pozycję na początek pamięci i zwracamy tablicę bajtów
         memStream.Position = 0;
         return memStream.ToArray();
     }

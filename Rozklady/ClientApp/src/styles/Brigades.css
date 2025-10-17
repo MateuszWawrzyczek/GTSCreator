@@ -1,0 +1,27 @@
+.feed-columns {
+  display: flex;
+  gap: 0.5rem; 
+}
+
+.feed-columns .feed-column {
+  flex: 1 1 50%; 
+  max-width: 50%;
+  box-sizing: border-box;
+  min-width: 0; 
+  padding: 0.3rem; 
+}
+
+.feed-columns .feed-column h5 {
+  white-space: normal; 
+  word-break: break-word;
+}
+
+@media (max-width: 768px) {
+  .feed-columns {
+    flex-direction: column;
+  }
+  .feed-columns .feed-column {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+}

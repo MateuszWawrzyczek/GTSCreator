@@ -48,17 +48,17 @@ public class StopsController : ControllerBase
             return NotFound();
         }
 
-        var routes = stop.StopTimes
-            .Select(st => st.Trip.Route)
-            .Where(r => r != null)
+        var routes = (stop.StopTimes ?? new List<StopTime>())
+            .Where(st => st.Trip?.Route != null)
+            .Select(st => st.Trip!.Route!)
             .Distinct()
             .Select(r => new RouteDto
             {
-                FeedId = r.FeedId,
-                RouteId = r.RouteId,
-                RouteShortName = r.RouteShortName
+                FeedId = r.FeedId ?? "",
+                RouteId = r.RouteId ?? "",
+                RouteShortName = r.RouteShortName ?? ""
             })
-            .OrderBy (r=> r.RouteShortName)
+            .OrderBy(r => r.RouteShortName)
             .ToList();
 
         return Ok(routes);

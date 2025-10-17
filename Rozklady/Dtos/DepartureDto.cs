@@ -12,4 +12,7 @@ public class DepartureDto
     public string Headsign { get; set; } = null!;
     public string RouteShortName { get; set; } = null!;
     public TimeSpan DepartureTime { get; set; }
+    public string? Delay { get; set; }
+    public string? FleetNumber { get; set; }
+    public bool OnTrip { get; set; }
 }

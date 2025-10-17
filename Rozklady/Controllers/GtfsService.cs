@@ -19,14 +19,13 @@ public class GtfsBackgroundService : BackgroundService
 {
     while (!stoppingToken.IsCancellationRequested)
     {
-        // Oblicz czas do najbliższej 2:00
         var now = DateTime.Now;
-        var nextRun = now.Date.AddHours(2);
+        var nextRun = now.Date.AddHours(11).AddMinutes(17);
         if (now > nextRun)
             nextRun = nextRun.AddDays(1);
 
         var delay = nextRun - now;
-        _logger.LogInformation("⏰ Czekam do {nextRun}", nextRun);
+        _logger.LogInformation("Czekam do {nextRun}", nextRun);
 
         await Task.Delay(delay, stoppingToken);
 
@@ -41,7 +40,7 @@ public class GtfsBackgroundService : BackgroundService
                 new() { Prefix = "raciborz", Name = "Racibórz", Domain = "kiedyprzyjedzie.pl" }
             };
 
-            _logger.LogInformation("⏰ Start generowania GTFS o {time}", DateTime.Now);
+            _logger.LogInformation("Start generowania GTFS o {time}", DateTime.Now);
 
             using (var scope = _serviceProvider.CreateScope())
             {

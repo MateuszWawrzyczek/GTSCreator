@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { useEffect, useState, useRef } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import { Link } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
@@ -19,9 +19,36 @@ const busIcon = new L.Icon({
   popupAnchor: [0, -28],
 });
 
+function FitBounds({ stops, vehicles }) {
+  const map = useMap();
+  const hasFitted = useRef(false);
+
+  useEffect(() => {
+    if (hasFitted.current) return;
+
+    const points = [];
+
+    if (stops.length) {
+      stops.forEach((s) => points.push([s.stopLat, s.stopLon]));
+    }
+    if (vehicles.length) {
+      vehicles.forEach((v) => points.push([v.latitude, v.longitude]));
+    }
+
+    if (points.length === 0) return;
+
+    const bounds = L.latLngBounds(points);
+    map.fitBounds(bounds, { padding: [50, 50] });
+    hasFitted.current = true; 
+  }, [stops, vehicles, map]);
+
+  return null;
+}
+
 function StopsMap({ stops = [], vehicles = [] }) {
   const [selectedStop, setSelectedStop] = useState(null);
   const [routes, setRoutes] = useState([]);
+  const apiUrl = process.env.REACT_APP_API_URL;
 
   const defaultCenter = stops.length
     ? [
@@ -35,7 +62,7 @@ function StopsMap({ stops = [], vehicles = [] }) {
 
     const fetchRoutes = async () => {
       try {
-        const url = `https://localhost:7002/api/stops/${selectedStop.feedId}/${selectedStop.stopId}/routes`;
+        const url = `${apiUrl}/api/stops/${selectedStop.feedId}/${selectedStop.stopId}/routes`;
         const res = await fetch(url, { mode: "cors" });
         if (!res.ok) throw new Error("Błąd pobierania linii");
         const data = await res.json();
@@ -47,7 +74,7 @@ function StopsMap({ stops = [], vehicles = [] }) {
     };
 
     fetchRoutes();
-  }, [selectedStop]);
+  }, [selectedStop, apiUrl]);
 
   return (
     <MapContainer
@@ -59,6 +86,7 @@ function StopsMap({ stops = [], vehicles = [] }) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
       />
+      <FitBounds stops={stops} vehicles={vehicles} />
 
       {stops.map((stop) => (
         <Marker

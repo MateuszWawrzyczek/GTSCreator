@@ -50,6 +50,8 @@ public class StopTimetableController : ControllerBase
 
         IQueryable<dynamic> query;
 
+        var serviceIds = dateMappings.Select(x => x.ServiceId!).Distinct().ToList();
+
         if (!dateMappings.Any())
         {
             query =
@@ -58,7 +60,12 @@ public class StopTimetableController : ControllerBase
                 join r in _context.Routes on new { t.RouteId, t.FeedId } equals new { r.RouteId, r.FeedId }
                 join s in _context.ServiceTypes on t.ServiceId equals s.ServiceId
                 join stop in _context.Stops on new { st.StopId, st.FeedId } equals new { stop.StopId, stop.FeedId }
-                where st.StopId == stopId && st.FeedId == feedId
+                where st.FeedId == feedId 
+                    && st.StopId == stopId
+                    && serviceIds.Contains(t.ServiceId)
+                    && st.StopSequence < _context.StopTimes
+                        .Where(x => x.TripId == st.TripId && x.FeedId == st.FeedId)
+                        .Max(x => x.StopSequence)
                 select new
                 {
                     st.StopId,
@@ -73,7 +80,6 @@ public class StopTimetableController : ControllerBase
         }
         else
         {
-            var serviceIds = dateMappings.Select(x => x.ServiceId!).Distinct().ToList();
 
             query =
                 from st in _context.StopTimes

@@ -94,28 +94,50 @@ public class TimetableController : ControllerBase
         var now = DateTime.Now.TimeOfDay;
         var maxTime = now.Add(TimeSpan.FromHours(hours));
 
+        var vehicles = VehicleCache.GetCache(); 
+        var vehicleLookup = vehicles
+            .Where(v => v.FeedId == FeedId && v.TripId != null)
+            .GroupBy(v => v.TripId!)
+            .ToDictionary(g => g.Key!, g => g.First());
+        
+        string StripPrefix(string tripId)
+        {
+            var parts = tripId.Split('_');
+            return parts.Length > 1 ? parts.Last() : tripId;
+        }
         
 
         var departures = trips
-            .SelectMany(t => t.StopTimes, (trip, st) => new { trip, st })
-            .Where(x => x.st.StopId == stopId) 
-            .Where(x => x.st.DepartureTime >= now && x.st.DepartureTime <= maxTime)
-            .Select(x => new DepartureDto
+        .SelectMany(t => t.StopTimes, (trip, st) => new { trip, st })
+        .Where(x => x.st.StopId == stopId)
+        .Where(x => x.st.DepartureTime >= now && x.st.DepartureTime <= maxTime)
+        .Select(x =>
+        {
+            var strippedTripId = StripPrefix(x.trip.TripId);
+            var vehicle = vehicleLookup
+                .Where(kv => x.trip.TripId.EndsWith("_" + kv.Key))
+                .Select(kv => kv.Value)
+                .FirstOrDefault();
+            return new DepartureDto
             {
                 FeedId = x.trip.FeedId,
                 TripId = x.trip.TripId,
                 StopId = x.st.StopId,
                 Headsign = x.trip.TripHeadsign,
-                RouteShortName = x.trip.Route.RouteShortName,
-                DepartureTime = x.st.DepartureTime ?? TimeSpan.Zero
-            })
-            .OrderBy(d => d.DepartureTime)
-            .Take(max)
-            .ToList();
+                RouteShortName = x.trip.Route?.RouteShortName ?? "",
+                DepartureTime = x.st.DepartureTime ?? TimeSpan.Zero,
+                Delay = vehicle?.Delay ?? "",
+                FleetNumber = vehicle?.FleetNumber ?? "",
+                OnTrip = vehicle?.OnTrip ?? false
+            };
+        })
+        .OrderBy(d => d.DepartureTime)
+        .Take(max)
+        .ToList();
 
         return new StopDeparturesDto
         {
-            StopName = stopName,
+            StopName = stopName ?? "",
             Departures = departures
         };
     }

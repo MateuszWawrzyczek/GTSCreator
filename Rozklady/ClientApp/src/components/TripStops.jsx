@@ -10,11 +10,12 @@ function TripStops() {
   const [timetable, setTimetable] = useState(null);
   const [loading, setLoading] = useState(true);
   //const [selectedVariantIndex, setSelectedVariantIndex] = useState(null);
+  const apiUrl = process.env.REACT_APP_API_URL;
 
   useEffect(() => {
     const fetchVariants = async () => {
       try {
-        const url = `https://localhost:7002/api/Trip/${feedId}/${routeId}`;
+        const url = `${apiUrl}/api/Trip/${feedId}/${routeId}`;
         const response = await fetch(url);
         const data = await response.json();
         console.log("Pobrane dane:", url, data);
@@ -33,7 +34,7 @@ function TripStops() {
     };
 
     fetchVariants();
-  }, [feedId, routeId]);
+  }, [feedId, routeId, apiUrl]);
 
   function formatTime(timeStr) {
     if (!timeStr) return "";

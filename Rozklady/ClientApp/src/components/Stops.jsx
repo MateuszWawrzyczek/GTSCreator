@@ -17,11 +17,13 @@ function Stops() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [expandedStops, setExpandedStops] = useState({}); 
+  const apiUrl = process.env.REACT_APP_API_URL;
+
 
   useEffect(() => {
     const fetchStops = async () => {
       try {
-        const url = "https://localhost:7002/api/stops";
+        const url = `${apiUrl}/api/stops`;
         const response = await fetch(url, { mode: "cors" });
         if (!response.ok) throw new Error("Błąd podczas pobierania danych");
         const data = await response.json();
@@ -53,7 +55,7 @@ function Stops() {
       return;
     }
     try {
-      const url = `https://localhost:7002/api/stops/${feedId}/${stopId}/routes`;
+      const url = `${apiUrl}/api/stops/${feedId}/${stopId}/routes`;
       const response = await fetch(url, { mode: "cors" });
       if (!response.ok) throw new Error("Błąd pobierania linii dla przystanku");
       const data = await response.json();

@@ -10,11 +10,12 @@ function RouteVariantStops() {
   
   const [loading, setLoading] = useState(true);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(null);
+  const apiUrl = process.env.REACT_APP_API_URL;
 
   useEffect(() => {
     const fetchVariants = async () => {
       try {
-        const url = `https://localhost:7002/api/RouteStops?feedId=${feedId}&routeId=${routeId}`;
+        const url = `${apiUrl}/api/RouteStops?feedId=${feedId}&routeId=${routeId}`;
         const response = await fetch(url);
         const data = await response.json();
 
@@ -25,6 +26,7 @@ function RouteVariantStops() {
 
         setVariants(parsed);
         if (parsed.length > 0) setSelectedVariantIndex(0);
+        console.log(parsed);
       } catch (err) {
         console.error(err);
       } finally {
@@ -33,14 +35,14 @@ function RouteVariantStops() {
     };
 
     const fetchVehicles = async () => {
-      const res = await fetch("https://localhost:7002/api/vehicles/vehiclePositions");
+      const res = await fetch(`${apiUrl}/api/vehicles/vehiclePositions`);
       const data = await res.json();
       setVehicles(data);
     };
 
     fetchVariants();
     fetchVehicles();
-  }, [feedId, routeId]);
+  }, [feedId, routeId, apiUrl]);
 
   const filteredVehicles = React.useMemo(() => {
     return vehicles.filter(v => v.routeId === routeId);
@@ -77,7 +79,7 @@ function RouteVariantStops() {
           paddingRight: "1.5rem",
         }}
       >
-        <h2 className="mb-3">Warianty linii {routeId}</h2>
+        <h2 className="mb-3">Warianty linii {variants[0]?.routeShortName}</h2>
 
         <select
           className="form-select mb-3"
