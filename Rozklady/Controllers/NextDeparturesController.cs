@@ -91,7 +91,9 @@ public class TimetableController : ControllerBase
             .Include(t => t.Route)
             .ToListAsync();
 
-        var now = DateTime.Now.TimeOfDay;
+        var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
+            TimeZoneInfo.FindSystemTimeZoneById("Europe/Warsaw")).TimeOfDay;
+
         var maxTime = now.Add(TimeSpan.FromHours(hours));
 
         var vehicles = VehicleCache.GetCache(); 
@@ -123,7 +125,7 @@ public class TimetableController : ControllerBase
                 FeedId = x.trip.FeedId,
                 TripId = x.trip.TripId,
                 StopId = x.st.StopId,
-                Headsign = x.trip.TripHeadsign,
+                Headsign = x.trip.TripHeadsign ?? "",
                 RouteShortName = x.trip.Route?.RouteShortName ?? "",
                 DepartureTime = x.st.DepartureTime ?? TimeSpan.Zero,
                 Delay = vehicle?.Delay ?? "",

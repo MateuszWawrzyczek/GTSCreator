@@ -38,7 +38,6 @@ public class BlocksController : ControllerBase
             })
             .ToListAsync();
 
-        // Łączenie Trips z StopTimes
         var detailedTrips = trips
             .Select(t => new
             {
@@ -59,6 +58,7 @@ public class BlocksController : ControllerBase
                 .ToList();
 
 
+
         var groupedBlocks = detailedTrips
             .GroupBy(t => t.BlockId)
             .Select(g => new
@@ -76,7 +76,9 @@ public class BlocksController : ControllerBase
         if (string.IsNullOrWhiteSpace(blockId))
             return ("", int.MaxValue);
 
-        var match = Regex.Match(blockId, @"^(?<prefix>[A-Z])?-?(?<num>\d+)");
+        var cleaned = Regex.Replace(blockId, @"(RB|RF|SB|ND|SW)$", "");
+
+        var match = Regex.Match(cleaned, @"^(?<prefix>[A-Z])?-?(?<num>\d+)");
         if (!match.Success)
             return ("", int.MaxValue);
 
@@ -85,4 +87,5 @@ public class BlocksController : ControllerBase
 
         return (prefix, number);
     }
+
 }

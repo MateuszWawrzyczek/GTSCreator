@@ -41,6 +41,9 @@ builder.Services.AddHttpClient<IKiedyPrzyjedzieClient, KiedyPrzyjedzieClient>(cl
     client.BaseAddress = new Uri("https://kiedyprzyjedzie.pl");
 });
 
+builder.Services.AddHttpClient();
+builder.Services.AddHostedService<RealTimeVehiclesService>();
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

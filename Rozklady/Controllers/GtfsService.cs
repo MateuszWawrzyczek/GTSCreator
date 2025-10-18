@@ -20,7 +20,7 @@ public class GtfsBackgroundService : BackgroundService
     while (!stoppingToken.IsCancellationRequested)
     {
         var now = DateTime.Now;
-        var nextRun = now.Date.AddHours(11).AddMinutes(17);
+        var nextRun = now.Date.AddHours(18).AddMinutes(42);
         if (now > nextRun)
             nextRun = nextRun.AddDays(1);
 
@@ -35,7 +35,7 @@ public class GtfsBackgroundService : BackgroundService
             {
                 new() { Prefix = "wodzislaw", Name = "Wodzisław", Domain = "kiedyprzyjedzie.pl" },
                 new() { Prefix = "pksraciborz", Name = "PKS Racibórz", Domain = "kiedyprzyjedzie.pl" },
-                //new() { Prefix = "pszczyna", Name = "Pszczyna", Domain = "kiedyprzyjedzie.pl" },
+                new() { Prefix = "pszczyna", Name = "Pszczyna", Domain = "kiedyprzyjedzie.pl" },
                 new() { Prefix = "powiatwodzislawski", Name = "Powiat Wodzisławski", Domain = "kiedyprzyjedzie.pl" },
                 new() { Prefix = "raciborz", Name = "Racibórz", Domain = "kiedyprzyjedzie.pl" }
             };
