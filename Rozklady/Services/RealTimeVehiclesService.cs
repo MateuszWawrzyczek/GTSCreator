@@ -15,18 +15,20 @@ public class RealTimeVehiclesService : BackgroundService
     private static readonly SemaphoreSlim _semaphore = new(5);
     private static List<VehicleDto> _cache = new();
     private static DateTime _lastUpdate = DateTime.MinValue;
-
+    private readonly TripsHistoryService _tripsHistoryService;
     private static readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan HttpTimeout = TimeSpan.FromSeconds(2);
 
     public RealTimeVehiclesService(
         IDbContextFactory<RozkladyContext> contextFactory,
         ILogger<RealTimeVehiclesService> logger,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        TripsHistoryService tripsHistoryService)
     {
         _contextFactory = contextFactory;
         _logger = logger;
         _httpClientFactory = httpClientFactory;
+        _tripsHistoryService = tripsHistoryService;
     }
 
     public static List<VehicleDto> GetCache() => _cache;
@@ -40,6 +42,8 @@ public class RealTimeVehiclesService : BackgroundService
             try
             {
                 await UpdateVehiclesAsync(stoppingToken);
+                //await _tripsHistoryService.CheckInactiveTripsAsync();
+
             }
             catch (Exception ex)
             {
@@ -91,6 +95,11 @@ public class RealTimeVehiclesService : BackgroundService
         {
             _cache = allVehicles;
             _lastUpdate = DateTime.UtcNow;
+
+            VehicleCache.UpdateCache(allVehicles);
+            //await _tripsHistoryService.ProcessVehiclePositions(allVehicles);
+            
+
         }
         else
         {

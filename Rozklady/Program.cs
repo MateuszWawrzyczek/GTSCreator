@@ -42,6 +42,7 @@ builder.Services.AddHttpClient<IKiedyPrzyjedzieClient, KiedyPrzyjedzieClient>(cl
 });
 
 builder.Services.AddHttpClient();
+builder.Services.AddSingleton<TripsHistoryService>();
 builder.Services.AddHostedService<RealTimeVehiclesService>();
 
 builder.Services.AddControllers();
@@ -51,12 +52,14 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
 });
 
-builder.Services.AddScoped<TripsHistoryService>();
 builder.Services.AddScoped<ScraperService>();
 builder.Services.AddScoped<GtfsGenerator>();
 builder.Services.AddScoped<GtfsFacade>();
 builder.Services.AddScoped<GtfsUploader>();
 builder.Services.AddHostedService<GtfsBackgroundService>();
+builder.Services.AddSingleton<PrefixService>();
+builder.Services.AddHostedService<PrefixUpdateService>();
+
 
 var app = builder.Build();
 
@@ -87,5 +90,8 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapFallbackToFile("index.html");
+
+var prefixService = app.Services.GetRequiredService<PrefixService>();
+await prefixService.RefreshPrefixesAsync(); 
 
 app.Run();

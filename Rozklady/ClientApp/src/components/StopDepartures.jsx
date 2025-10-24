@@ -76,11 +76,19 @@ function StopDepartures() {
       const [h, m, s] = departureTime.split(":").map(Number);
       dep.setHours(h, m, s || 0, 0);
 
-      const diff = Math.max((Math.round((dep - now) / 60000)) - (delaySign * Math.round(totalDelaySeconds / 60)), 0); 
-      return `${diff} min`;
+      const diffMinutes = ((dep - now) / 60000) - (delaySign * totalDelaySeconds / 60);
+      const diffRounded = Math.max(Math.round(diffMinutes), 0);
+
+      if (diffMinutes > 0 && diffMinutes < 1) {
+        return "<1 min";
+      }
+
+      return `${diffRounded} min`;
     }
+
     return departureTime.substring(0, 5);
   };
+
 
   return (
     <div >

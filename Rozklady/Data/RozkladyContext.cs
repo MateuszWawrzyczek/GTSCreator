@@ -28,7 +28,7 @@ public class RozkladyContext : DbContext
         modelBuilder.Entity<ServiceType>().HasKey(sr => new { sr.ServiceId });
         modelBuilder.Entity<Vehicle>().HasKey(v => new { v.FleetNumber });
         modelBuilder.Entity<DayType>().HasKey(d => new { d.Date });
-        modelBuilder.Entity<TripsHistory>().HasKey(th => new { th.FeedId, th.TripId, th.PlannedStartTime });
+        modelBuilder.Entity<TripsHistory>().HasKey(th => new { th.Id });
 
         modelBuilder.Entity<Trip>()
             .HasOne(t => t.Route)
@@ -44,5 +44,12 @@ public class RozkladyContext : DbContext
             .HasOne(st => st.Stop)
             .WithMany(s => s.StopTimes)
             .HasForeignKey(st => new { st.FeedId, st.StopId });
+    }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+
+        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
     }
 }

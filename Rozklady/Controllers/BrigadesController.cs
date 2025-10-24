@@ -51,11 +51,11 @@ public class BlocksController : ControllerBase
             .ToList();
 
             detailedTrips = detailedTrips
-                .OrderBy(t => ParseBlockId(t.BlockId ?? "").prefix == "" ? 0 : 1) 
-                .ThenBy(t => ParseBlockId(t.BlockId ?? "").number)
-                .ThenBy(t => ParseBlockId(t.BlockId ?? "").prefix)
-                .ThenBy(t => t.StartTime)
+                .OrderBy(t => ParseBlockId(t.BlockId ?? "").prefix)   // alfabetycznie po prefixie
+                .ThenBy(t => ParseBlockId(t.BlockId ?? "").number)   // numerycznie po numerze
+                .ThenBy(t => t.StartTime)                            // potem po czasie
                 .ToList();
+
 
 
 
@@ -76,16 +76,26 @@ public class BlocksController : ControllerBase
         if (string.IsNullOrWhiteSpace(blockId))
             return ("", int.MaxValue);
 
-        var cleaned = Regex.Replace(blockId, @"(RB|RF|SB|ND|SW)$", "");
+        var cleaned = Regex.Replace(blockId, @"(RB|RF|SB|ND|SW)$", "", RegexOptions.IgnoreCase);
 
-        var match = Regex.Match(cleaned, @"^(?<prefix>[A-Z])?-?(?<num>\d+)");
-        if (!match.Success)
-            return ("", int.MaxValue);
+        var matchDash = Regex.Match(cleaned, @"^(?<prefix>[A-ZŁĄĆĘŚŻŹÖÜĆ]+)-?(?<num>\d+)$", RegexOptions.IgnoreCase);
+        if (matchDash.Success)
+        {
+            string prefix = matchDash.Groups["prefix"].Value ?? "";
+            int number = int.TryParse(matchDash.Groups["num"].Value, out int n) ? n : int.MaxValue;
+            return (prefix.ToUpperInvariant(), number);
+        }
 
-        string prefix = match.Groups["prefix"].Value ?? "";
-        int number = int.TryParse(match.Groups["num"].Value, out int n) ? n : int.MaxValue;
+        var matchPlain = Regex.Match(cleaned, @"^(?<prefix>[A-ZŁĄĆĘŚŻŹÖÜĆ]*)(?<num>\d+)$", RegexOptions.IgnoreCase);
+        if (matchPlain.Success)
+        {
+            string prefix = matchPlain.Groups["prefix"].Value ?? "";
+            int number = int.TryParse(matchPlain.Groups["num"].Value, out int n) ? n : int.MaxValue;
+            return (prefix.ToUpperInvariant(), number);
+        }
 
-        return (prefix, number);
+        return ("", int.MaxValue);
     }
+
 
 }

@@ -96,48 +96,50 @@ public class TimetableController : ControllerBase
 
         var maxTime = now.Add(TimeSpan.FromHours(hours));
 
-        var vehicles = VehicleCache.GetCache(); 
-        var vehicleLookup = vehicles
+        var vehicles = VehicleCache.GetCache()             
             .Where(v => v.FeedId == FeedId && v.TripId != null)
-            .GroupBy(v => v.TripId!)
-            .ToDictionary(g => g.Key!, g => g.First());
-        
-        string StripPrefix(string tripId)
+    .ToList();
+
+        var vehicleLookup = vehicles
+            .GroupBy(v => GetBareTripId(v.TripId!.Trim()))
+            .ToDictionary(g => g.Key, g => g.First());
+
+        string GetBareTripId(string tripId)
         {
             var parts = tripId.Split('_');
-            return parts.Length > 1 ? parts.Last() : tripId;
+            if (parts.Length > 1)
+                return parts.Last(); 
+            return tripId;
         }
-        
 
         var departures = trips
-        .SelectMany(t => t.StopTimes, (trip, st) => new { trip, st })
-        .Where(x => x.st.StopId == stopId)
-        .Where(x => x.st.DepartureTime >= now && x.st.DepartureTime <= maxTime)
-        .Select(x =>
-        {
-            var strippedTripId = StripPrefix(x.trip.TripId);
-            var vehicle = vehicleLookup
-                .Where(kv => x.trip.TripId.EndsWith("_" + kv.Key))
-                .Select(kv => kv.Value)
-                .FirstOrDefault();
-            return new DepartureDto
+            .SelectMany(t => t.StopTimes, (trip, st) => new { trip, st })
+            .Where(x => x.st.StopId == stopId)
+            .Where(x => x.st.DepartureTime >= now && x.st.DepartureTime <= maxTime)
+            .Select(x =>
             {
-                FeedId = x.trip.FeedId,
-                TripId = x.trip.TripId,
-                StopId = x.st.StopId,
-                Headsign = x.trip.TripHeadsign ?? "",
-                RouteShortName = x.trip.Route?.RouteShortName ?? "",
-                DepartureTime = x.st.DepartureTime ?? TimeSpan.Zero,
-                Delay = vehicle?.Delay ?? "",
-                FleetNumber = vehicle?.FleetNumber ?? "",
-                OnTrip = vehicle?.OnTrip ?? false
-            };
-        })
-        .OrderBy(d => d.DepartureTime)
-        .Take(max)
-        .ToList();
+                var bareTripId = GetBareTripId(x.trip.TripId);
 
-        return new StopDeparturesDto
+                vehicleLookup.TryGetValue(bareTripId, out var vehicle);
+                return new DepartureDto
+                {
+                    FeedId = x.trip.FeedId,
+                    TripId = x.trip.TripId,
+                    StopId = x.st.StopId,
+                    Headsign = x.trip.TripHeadsign ?? "",
+                    RouteShortName = x.trip.Route?.RouteShortName ?? "",
+                    DepartureTime = x.st.DepartureTime ?? TimeSpan.Zero,
+                    Delay = vehicle?.Delay ?? "",
+                    FleetNumber = vehicle?.FleetNumber ?? "",
+                    OnTrip = vehicle?.OnTrip ?? false
+                };
+            })
+            .OrderBy(d => d.DepartureTime)
+            .Take(max)
+            .ToList();
+
+    
+            return new StopDeparturesDto
         {
             StopName = stopName ?? "",
             Departures = departures

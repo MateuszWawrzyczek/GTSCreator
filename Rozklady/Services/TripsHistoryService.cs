@@ -3,17 +3,20 @@ using System.Collections.Concurrent;
 using Rozklady.Data;
 using Rozklady.Models;
 
-
 public class TripsHistoryService
 {
-    private readonly RozkladyContext _context;
+    private readonly IDbContextFactory<RozkladyContext> _contextFactory;
     private readonly ConcurrentDictionary<string, ActiveTripDto> _activeTrips = new();
+    private readonly PrefixService _prefixService;
 
-    public TripsHistoryService(RozkladyContext context)
+    private readonly TimeZoneInfo _warsawTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+
+    public TripsHistoryService(IDbContextFactory<RozkladyContext> contextFactory, PrefixService prefixService)
     {
-        _context = context;
-
+        _contextFactory = contextFactory;
+        _prefixService = prefixService;
     }
+
     public async Task ProcessVehiclePositions(IEnumerable<VehicleDto> vehicles)
     {
         foreach (var vehicle in vehicles)
@@ -25,123 +28,150 @@ public class TripsHistoryService
     public async Task ProcessVehiclePosition(VehicleDto pos)
     {
         var key = $"{pos.FleetNumber}:{pos.FeedId}";
-        var now = DateTime.UtcNow;
+        DateTime nowLocal = DateTime.SpecifyKind(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _warsawTimeZone), DateTimeKind.Unspecified);
 
-        // Sprawdź, czy pojazd ma aktywny kurs w pamięci
+        int? prefix = pos.FeedId == "MZK" ? _prefixService.MzkPrefix : _prefixService.KmrPrefix;
+        string prefixedTripId = $"{prefix}_{pos.TripId}";
+
         if (_activeTrips.TryGetValue(key, out var existing))
         {
-            // 1️⃣ Jeśli kurs się zmienił (inne TripId)
             if (existing.TripId != pos.TripId)
             {
-                await EndTripAsync(existing, now);
+                await EndTripAsync(existing, nowLocal);
                 _activeTrips.TryRemove(key, out _);
             }
 
-            // 2️⃣ Aktualizuj dane bieżącego kursu
             if (pos.OnTrip)
             {
-                existing.LastSeen = now;
+                existing.LastSeen = nowLocal;
                 existing.Delay = ParseDelay(pos.Delay);
                 existing.LastLat = pos.Latitude;
                 existing.LastLon = pos.Longitude;
             }
             else
             {
-                // 3️⃣ Kurs się zakończył
-                await EndTripAsync(existing, now);
+                await EndTripAsync(existing, nowLocal);
                 _activeTrips.TryRemove(key, out _);
             }
         }
         else
         {
-            // 4️⃣ Nowy kurs (onTrip = true)
-            if (pos.OnTrip)
+            if (!pos.OnTrip) return;
+
+            var trip = new ActiveTripDto
             {
-                var trip = new ActiveTripDto
-                {
-                    FeedId = pos.FeedId!,
-                    RouteId = pos.RouteId!,
-                    TripId = pos.TripId!,
-                    FleetNumber = pos.FleetNumber!,
-                    FirstSeen = now,
-                    LastSeen = now,
-                    Delay = ParseDelay(pos.Delay),
-                    LastLat = pos.Latitude,
-                    LastLon = pos.Longitude
-                };
+                FeedId = pos.FeedId!,
+                RouteId = pos.RouteId!,
+                TripId = pos.TripId!,
+                FleetNumber = pos.FleetNumber!,
+                FirstSeen = nowLocal,
+                LastSeen = nowLocal,
+                Delay = ParseDelay(pos.Delay),
+                LastLat = pos.Latitude,
+                LastLon = pos.Longitude
+            };
 
-                _activeTrips[key] = trip;
+            _activeTrips[key] = trip;
 
-                // Zapisz rozpoczęcie w bazie
-                await _context.TripsHistory.AddAsync(new TripsHistory
-                {
-                    FeedId = trip.FeedId!,
-                    RouteId = trip.RouteId!,
-                    TripId = trip.TripId!,
-                    FleetNumber = trip.FleetNumber!,
-                    ActualStartTime = now
-                });
-                await _context.SaveChangesAsync();
-            }
+            await using var db = _contextFactory.CreateDbContext();
+            DateTime today = DateTime.SpecifyKind(nowLocal.Date, DateTimeKind.Unspecified);
+
+            var stops = await db.StopTimes
+                .Where(s => s.FeedId == trip.FeedId && s.TripId == prefixedTripId)
+                .OrderBy(s => s.StopSequence)
+                .Select(s => new { s.DepartureTime, s.ArrivalTime })
+                .ToListAsync();
+
+            var firstStop = stops?.FirstOrDefault();
+            var lastStop = stops?.LastOrDefault();
+
+            DateTime? plannedStart = firstStop?.DepartureTime != null
+                ? DateTime.SpecifyKind(today + firstStop.DepartureTime.Value, DateTimeKind.Unspecified)
+                : (DateTime?)null;
+
+            DateTime? plannedEnd = lastStop?.ArrivalTime != null
+                ? DateTime.SpecifyKind(today + lastStop.ArrivalTime.Value, DateTimeKind.Unspecified)
+                : (DateTime?)null;
+
+            var tripInfo = await db.Trips
+                .Where(t => t.FeedId == trip.FeedId && t.TripId == prefixedTripId)
+                .Select(t => new { t.TripHeadsign })
+                .FirstOrDefaultAsync();
+
+            string direction = tripInfo?.TripHeadsign ?? "Unknown";
+
+            await db.TripsHistory.AddAsync(new TripsHistory
+            {
+                FeedId = trip.FeedId!,
+                RouteId = trip.RouteId!,
+                TripId = prefixedTripId,
+                FleetNumber = trip.FleetNumber!,
+                ActualStartTime = nowLocal,
+                Direction = direction!,
+                PlannedStartTime = plannedStart,
+                PlannedEndTime = plannedEnd
+            });
+
+            await db.SaveChangesAsync();
         }
     }
 
-    // Pomocnicza metoda kończenia kursu
-    private async Task EndTripAsync(ActiveTripDto trip, DateTime now)
+    private async Task EndTripAsync(ActiveTripDto trip, DateTime nowLocal)
     {
-        var history = await _context.TripsHistory
+        int? prefix = trip.FeedId == "MZK" ? _prefixService.MzkPrefix : _prefixService.KmrPrefix;
+        string prefixedTripId = $"{prefix}_{trip.TripId}";
+
+        await using var db = _contextFactory.CreateDbContext();
+
+        var history = await db.TripsHistory
             .FirstOrDefaultAsync(h =>
-                h.TripId == trip.TripId &&
+                h.TripId == prefixedTripId &&
                 h.FleetNumber == trip.FleetNumber &&
                 h.ActualEndTime == null);
 
         if (history != null)
         {
-            history.ActualEndTime = now;
-            //history.DelayEndSeconds = (int?)trip.Delay?.TotalSeconds;
-            await _context.SaveChangesAsync();
+            history.ActualEndTime = nowLocal;
+            await db.SaveChangesAsync();
         }
     }
 
-
     public async Task CheckInactiveTripsAsync()
     {
-        var now = DateTime.UtcNow;
+        DateTime nowLocal = DateTime.SpecifyKind(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _warsawTimeZone), DateTimeKind.Unspecified);
         var timeout = TimeSpan.FromMinutes(0.5);
 
         foreach (var (key, trip) in _activeTrips)
         {
-            if (now - trip.LastSeen > timeout)
+            if (nowLocal - trip.LastSeen > timeout)
             {
                 _activeTrips.TryRemove(key, out _);
 
-                var history = await _context.TripsHistory
-                    .FirstOrDefaultAsync(h => h.TripId == trip.TripId &&
-                                            h.FleetNumber == trip.FleetNumber &&
-                                            h.ActualEndTime == null);
+                int? prefix = trip.FeedId == "MZK" ? _prefixService.MzkPrefix : _prefixService.KmrPrefix;
+                string prefixedTripId = $"{prefix}_{trip.TripId}";
+
+                await using var db = _contextFactory.CreateDbContext();
+                var history = await db.TripsHistory
+                    .FirstOrDefaultAsync(h =>
+                        h.TripId == prefixedTripId &&
+                        h.FleetNumber == trip.FleetNumber &&
+                        h.ActualEndTime == null);
 
                 if (history != null)
                 {
                     history.ActualEndTime = trip.LastSeen;
-                    //history.DelayEndSeconds = (int?)trip.Delay?.TotalSeconds;
+                    await db.SaveChangesAsync();
                 }
             }
         }
-
-        await _context.SaveChangesAsync();
-
     }
 
     private TimeSpan? ParseDelay(string? delayString)
     {
         if (string.IsNullOrEmpty(delayString))
             return null;
-
         if (TimeSpan.TryParse(delayString, out var delay))
             return delay;
-
         return null;
     }
-
-
 }

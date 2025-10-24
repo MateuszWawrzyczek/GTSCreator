@@ -1,7 +1,7 @@
 const feedColors = {
   MZK: "#DA251C",
   BKM: "#FFFFFF",
-  PPszczyna: "#97D700",
+  pszczyna: "#97D700",
   KMR: "#154BA1",
   raciborz: "#AFCA0B",
   UMPszczyna: "#3683CF",

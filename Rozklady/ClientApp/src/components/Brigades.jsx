@@ -10,8 +10,6 @@ const dayTypeLabels = {
 };
 
 
-
-
 function Brigades() {
   const [blocks, setBlocks] = useState([]);
   const [loading, setLoading] = useState(true);
